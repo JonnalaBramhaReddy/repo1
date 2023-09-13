@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Recognition App</title>
+</head>
+<body>
+    <h1>Face Recognition App</h1>
+
+    <h2>Register Face</h2>
+    <form action="/register" method="POST" enctype="multipart/form-data">
+        <label for="name">Name:</label>
+        <input type="text" name="name" required><br><br>
+
+        <label for="file">Select Image:</label>
+        <input type="file" name="file" accept="image/*" required><br><br>
+
+        <input type="submit" value="Register">
+    </form>
+
+    <h2>Recognize Face</h2>
+    <form action="/recognize" method="POST">
+        <label for="recognition_method">Recognition Method:</label>
+        <select name="recognition_method" required>
+            <option value="webcam">Webcam</option>
+            <option value="upload">Upload Image</option>
+        </select><br><br>
+
+        <!-- For webcam recognition -->
+        <div id="webcam-section" style="display: none;">
+            <p>Webcam is currently active...</p>
+            <p>Press 'q' to exit.</p>
+        </div>
+
+        <!-- For image upload recognition -->
+        <input type="file" name="file" id="upload-file" accept="image/*" style="display: none;"><br><br>
+
+        <input type="submit" value="Recognize">
+    </form>
+
+    <script>
+        // Show/hide elements based on the selected recognition method
+        const recognitionMethod = document.querySelector('select[name="recognition_method"]');
+        const webcamSection = document.getElementById('webcam-section');
+        const uploadFileInput = document.getElementById('upload-file');
+
+        recognitionMethod.addEventListener('change', () => {
+            if (recognitionMethod.value === 'webcam') {
+                webcamSection.style.display = 'block';
+                uploadFileInput.style.display = 'none';
+            } else if (recognitionMethod.value === 'upload') {
+                webcamSection.style.display = 'none';
+                uploadFileInput.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
