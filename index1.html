@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face Recognition Web App</title>
+</head>
+<body>
+    <h1>Face Recognition Web App</h1>
+
+    <h2>Register Face</h2>
+    <form action="/register" method="POST" enctype="multipart/form-data">
+        <label for="name">Name:</label>
+        <input type="text" name="name" required>
+        <input type="file" name="file" accept=".jpg, .jpeg, .png" required>
+        <input type="submit" value="Register">
+    </form>
+
+    <h2>Recognize Face</h2>
+    <form id="recognitionForm" action="/recognize" method="POST" enctype="multipart/form-data">
+        <label for="recognition_method">Recognition Method:</label>
+        <select name="recognition_method">
+            <option value="webcam">Webcam</option>
+            <option value="upload">Upload Image</option>
+        </select>
+
+        <div id="webcamRecognition" style="display: none;">
+            <video id="webcamVideo" autoplay playsinline></video>
+            <button id="startWebcam" onclick="startWebcam()">Start Webcam</button>
+            <button id="stopWebcam" onclick="stopWebcam()" style="display: none;">Stop Webcam</button>
+            <canvas id="webcamCanvas" style="display: none;"></canvas>
+            <button type="button" id="recognizeWebcam" onclick="recognizeWebcam()" style="display: none;">Recognize from Webcam</button>
+        </div>
+
+        <div id="uploadRecognition">
+            <input type="file" name="file" accept=".jpg, .jpeg, .png" required>
+            <button type="submit">Recognize from Upload</button>
+        </div>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        
+        let webcamStream;
+        const canvasElement = document.getElementById('webcamCanvas');
+        const recognizeButton = document.getElementById('recognizeWebcam');
+        const startButton = document.getElementById('startWebcam');
+        const stopButton = document.getElementById('stopWebcam');
+        const resultDiv = document.getElementById('result');
+        const recognitionForm = document.getElementById('recognitionForm');
+        
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                canvasElement.style.display = 'block';
+                recognizeButton.style.display = 'block';
+                stopButton.style.display = 'block';
+                startButton.style.display = 'none';
+            } catch (error) {
+                console.error('Error accessing webcam: ', error);
+            }
+        }
+        
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                canvasElement.style.display = 'none';
+                recognizeButton.style.display = 'none';
+                startButton.style.display = 'block';
+                stopButton.style.display = 'none';
+                resultDiv.innerHTML = '';
+            }
+        }
+        
+        async function recognizeWebcam() {
+            const videoElement = document.createElement('video');
+            videoElement.srcObject = webcamStream;
+            videoElement.autoplay = true;
+        
+            try {
+                const stream = await new Promise((resolve, reject) => {
+                    videoElement.onloadedmetadata = () => {
+                        resolve(videoElement.captureStream());
+                    };
+                });
+        
+                const videoTrack = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(videoTrack);
+        
+                const mediaStreamImage = await imageCapture.grabFrame();
+                const webcamImageBlob = await new Promise(resolve => mediaStreamImage.blob().then(resolve));
+        
+                const formData = new FormData();
+                formData.append('file', webcamImageBlob);
+                formData.append('recognition_method', 'webcam');
+        
+                fetch('/recognize', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.innerHTML = `<p>${data.message}</p>`;
+                })
+                .catch(error => {
+                    console.error('Error recognizing from webcam: ', error);
+                });
+            } catch (error) {
+                console.error('Error capturing frame from webcam: ', error);
+            }
+        }
+        function toggleRecognitionMethod() {
+            const selectedMethod = document.querySelector("select[name='recognition_method']").value;
+
+            const webcamRecognitionDiv = document.getElementById("webcamRecognition");
+            const uploadRecognitionDiv = document.getElementById("uploadRecognition");
+
+            if (selectedMethod === "webcam") {
+                webcamRecognitionDiv.style.display = "block";
+                uploadRecognitionDiv.style.display = "none";
+            } else if (selectedMethod === "upload") {
+                webcamRecognitionDiv.style.display = "none";
+                uploadRecognitionDiv.style.display = "block";
+            }
+        }
+        // Call the function to set the initial display based on the selected method
+        toggleRecognitionMethod();
+        recognitionForm.addEventListener('change', toggleRecognitionMethod);
+        function toggleRecognitionMethod() {
+            const selectedMethod = document.querySelector("select[name='recognition_method']").value;
+
+            const webcamRecognitionDiv = document.getElementById("webcamRecognition");
+            const uploadRecognitionDiv = document.getElementById("uploadRecognition");
+
+            if (selectedMethod === "webcam") {
+                webcamRecognitionDiv.style.display = "block";
+                uploadRecognitionDiv.style.display = "none";
+           } else if (selectedMethod === "upload") {
+                webcamRecognitionDiv.style.display = "none";
+                uploadRecognitionDiv.style.display = "block";
+            }
+        }   
+    </script>
+</body>
+</html>
